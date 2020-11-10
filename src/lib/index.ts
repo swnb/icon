@@ -1,5 +1,8 @@
 import { createCircle } from "./graphics/circle";
 import { createEllipse } from "./graphics/ellipse"
+import { Line } from "./line";
+import { Point } from "./line/point";
+import { RateQueue } from "./rate/queue";
 
 const canvasConfig = {
   width: window.innerWidth,
@@ -47,7 +50,19 @@ function render(context: CanvasRenderingContext2D) {
   clearRectByPath2d(context, circlePath, canvasConfig.lineColor)
   context.restore()
 
+  const rateQueue = new RateQueue<Line>(500).start()
+  rateQueue.subscribe((line) => {
+    console.log(line.getStartPoint(), line.getEndPoint())
+    context.beginPath()
+    context.moveTo(...line.getStartPoint().toTuple())
+    context.lineTo(...line.getEndPoint().toTuple())
+    context.stroke();
+    context.closePath()
+  })
 
+  renderTree(Point.create(x, y + 120), 20, Math.PI / 4, 100, (line) => {
+    rateQueue.push(line)
+  })
 }
 
 function renderReactIcon(context: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number) {
@@ -62,17 +77,32 @@ function clearRectByPath2d(context: CanvasRenderingContext2D, rectPath: Path2D, 
   context.fill(rectPath);
 }
 
-type Position = [number, number];
+function renderTree(startPoint: Point, length: number, angle: number, ttl: number, callback: (line: Line) => void) {
+  const endPoint = startPoint.createPointWithNewY(startPoint.y - length)
+  let line: Line | undefined = Line.create(startPoint, endPoint)
+  let queue: Line[] = [];
+  while (line && ttl-- > 0) {
+    queue.push(...createTreeBranch(line, angle, callback))
+    line = queue.shift();
+  }
+}
 
-function renderTree(context: CanvasRenderingContext2D, sp: Position, ep: Position, edge: number): [Position, Position] {
-  context.moveTo(sp[0], sp[1])
-  context.lineTo(ep[0], ep[1])
-  //   const length = Math.pow()
-  //   const xOffset = 
-  // const leftNode = [ex -,]
-  //   context.lineTo()
+function createTreeBranch(line: Line, angle: number, callback: (line: Line) => void): Line[] {
 
+  const startPoint = line.getStartPoint()
+  const endPoint = line.getEndPoint()
 
+  callback(Line.create(startPoint, endPoint))
+
+  const originVector = Line.create(startPoint, endPoint).toVector();
+  // const newVector = originVector.translate(originVector)
+  const leftVector = originVector.rotate(angle)
+  const rightVector = originVector.rotate(-angle)
+
+  const leftPoint = endPoint.translate(leftVector)
+  const rightPoint = endPoint.translate(rightVector)
+
+  return [Line.create(endPoint, leftPoint), Line.create(endPoint, rightPoint)]
 }
 
 export { getInitConfig, render }
