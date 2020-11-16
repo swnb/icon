@@ -27,7 +27,7 @@ export class Line implements ILine {
 
   public getDistance = () => {
     const { _sp, _ep } = this;
-    return sqrt(pow(_ep.x - _ep.x, 2) + pow(_ep.y - _sp.y, 2))
+    return sqrt(pow(_ep.x - _sp.x, 2) + pow(_ep.y - _sp.y, 2))
   }
 
   public getStartPoint = (): Point => this._sp;
